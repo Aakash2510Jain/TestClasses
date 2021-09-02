@@ -1,0 +1,190 @@
+@IsTest
+public class ServiceTestClass {
+    public static string mentorRecordTypeOnContact						= Schema.SobjectType.Contact.getRecordTypeInfosByName().get('Mentor').getRecordTypeId();
+    public static string studentRecordTypeOnContact						= Schema.SobjectType.Contact.getRecordTypeInfosByName().get('Student').getRecordTypeId();
+    public static string mentorRecordTypeOnCourseEnrollment				= Schema.SobjectType.Course_Enrollment__c.getRecordTypeInfosByName().get('Mentor').getRecordTypeId();
+    public static string studentRecordTypeOnCourseEnrollment			= Schema.SobjectType.Course_Enrollment__c.getRecordTypeInfosByName().get('Student').getRecordTypeId();
+    
+    @isTest static void testGetCategoryWiseResult() {
+        Id recordId 			= getIdOfResultCategory();
+        RestRequest request 	= new RestRequest();
+        request.requestUri 		= 'https://sales-production--umdev.my.salesforce.com/services/apexrest/Student_Test_Association__c/';
+        request.addParameter('id', recordId);
+        request.httpMethod 		= 'GET';
+        RestContext.request 	= request;
+        // Call the method to test
+        GetCategoryWiseResult.doGetResult();
+    }
+    @isTest static void testGetCEModuleTest() {
+        Id recordId 			= getIdOfCEModule();
+        system.debug('recordId::::::'+recordId);
+        RestRequest request 	= new RestRequest();
+        request.requestUri 		= 'https://sales-production--umdev.my.salesforce.com/services/apexrest/CE_Module__c/';
+        request.addParameter('id', recordId);
+        request.httpMethod 		= 'GET';
+        RestContext.request 	= request;
+        // Call the method to test
+        GetCEModuleTest.getAssessmentQuestionForCEModules();
+    }
+    @isTest static void testCourseEnrollmentswithRating() {
+        Id recordId 			= getIdOfContact();
+        system.debug('recordId::::::'+recordId);
+        RestRequest request 	= new RestRequest();
+        request.requestUri 		= 'https://sales-production--umdev.my.salesforce.com/services/apexrest/get_my_enrollments/'+recordId;
+        request.httpMethod 		= 'GET';
+        RestContext.request 	= request;
+        // Call the method to test
+        CourseEnrollmentswithRating.upcomingBatch();
+    }
+    @isTest static void testTrendingCourseandUpdate() {
+        Id recordId 			= getIdOfContact();
+        system.debug('recordId::::::'+recordId);
+        RestRequest request 	= new RestRequest();
+        request.requestUri 		= 'https://sales-production--umdev.my.salesforce.com/services/apexrest/get_my_enrollments/'+recordId;
+        request.httpMethod 		= 'GET';
+        RestContext.request 	= request;
+        
+        // Call the method to test
+        TrendingCourseandUpdate.getCoursesandUpdate();
+    }
+    @isTest static void testUpcomingBatchDetailsService() {
+        Id recordId 			= getIdOfCourseId();
+        system.debug('recordId::::::'+recordId);
+        RestRequest request 	= new RestRequest();
+        request.requestUri 		= 'https://sales-production--umdev.my.salesforce.com/services/apexrest/get_my_enrollments/'+recordId;
+        request.httpMethod 		= 'GET';
+        RestContext.request 	= request;
+        
+        // Call the method to test
+        UpcomingBatchDetailsService.upcomingBatch();
+    }
+    @isTest static void testEnrollStudentToCourseService() {
+        string courseMasterId 			= getIdOfCourseId();
+        Contact student 				= new Contact(FirstName = 'Aakash', LastName = 'Jain', Email= 'aakash.jain@utilitarianlab.com', RecordTypeId = studentRecordTypeOnContact);
+        insert student;
+        //Payment_Order__c paymentOrder 	= new Payment_Order__c(Gateway__c='Stripe', Order_Id__c = 'abcd123', Amount__c = 1000,Status__c = 'SUCCESS',Paid_By__c= student.id ,Transaction_Id__c = '0987654321zyx');
+        //insert paymentOrder;
+        RestRequest request 			= new RestRequest();
+        request.requestUri 				= 'https://sales-production--umdev.my.salesforce.com/services/apexrest/student_course_enrollment/';
+        request.httpMethod 				= 'POST';
+        request.requestBody 			= Blob.valueOf('{"courseMasterId": courseMasterId},{"studentId": student.Id},{"amount": 1000},{"transactionId": },{"status": "SUCCESS"},{"gateway": "Stripe"},{"orderId": paymentOrder.Transaction_Id__c}');
+////////////////////////////////////////////////////////////////////////////////////////
+        RestContext.request 			= request;
+        // Call the method to test
+        EnrollStudentToCourseService.enrolStudent();
+    }
+    
+    
+    static Id getIdOfCourseId() {
+        // Create test record
+        Contact mentor = new Contact(FirstName = 'Ajeet', LastName = 'Kumar', Email= 'aakash.jain@utilitarianlab.com', RecordTypeId = mentorRecordTypeOnContact);
+        insert mentor;
+        Contact student = new Contact(FirstName = 'Aakash', LastName = 'Jain', Email= 'aakash.jain@utilitarianlab.com', RecordTypeId = mentorRecordTypeOnContact);
+        insert student;
+        Course_Category__c courseCategory = new Course_Category__c(Name='Testing Course Category');
+        insert courseCategory;
+        Course_Master__c courseMaster = new Course_Master__c(Name = 'testing Course', Active__c = true,Course_Category__c = courseCategory.Id);
+        insert courseMaster;
+        Course_Offering__c courseModule = new Course_Offering__c(Name = 'Testing Module', Active__c = true,Module_Agenda__c = 'testing Module Agenda',Description__c = 'testing Module description',Course_Master__c = courseMaster.id );
+        insert courseModule;
+        Course_Schedule__c courseSession = new Course_Schedule__c(Course_Offering__c = courseModule.id, Session_Agenda__c = 'testing session Agenda');
+        insert courseSession;
+        Course_Master__c courseMaster1 = new Course_Master__c(Name = 'testing Course 1', Active__c = true,Course_Category__c = courseCategory.Id);
+        insert courseMaster1;
+        Course_Offering__c courseModule1 = new Course_Offering__c(Name = 'Testing Module 1', Active__c = true,Module_Agenda__c = 'testing Module Agenda 1',Description__c = 'testing Module description 1',Course_Master__c = courseMaster1.id );
+        insert courseModule1;
+        Course_Schedule__c courseSession1 = new Course_Schedule__c(Course_Offering__c = courseModule1.id, Session_Agenda__c = 'testing session Agenda 1');
+        insert courseSession1;
+        
+        Course_Enrollment__c mentorsCourseEnrollment = new Course_Enrollment__c(Course_Master__c = courseMaster.Id, Contact__c = mentor.Id, Schedule_End_Date__c = Date.newInstance(2021, 10, 25), RecordTypeId  = mentorRecordTypeOnCourseEnrollment);
+        insert mentorsCourseEnrollment;
+        system.debug('mentorsCourseEnrollment::'+mentorsCourseEnrollment);
+        CE_Modules__c CEModule = [Select Id from CE_Modules__c where Course_Enrollment__c =: mentorsCourseEnrollment.id];
+        system.debug('CEModule:'+CEModule);
+        Ass_Ques_Master__c assessmentQuestionMaster = new Ass_Ques_Master__c(Name = 'Testing Assesment Question Master');
+        insert assessmentQuestionMaster;
+        Assessment_Question__c assessmentQuestion = new Assessment_Question__c(Question__c = 'Testing Question', Assessment_Question_Master__c =assessmentQuestionMaster.Id,Answer_Type__c = 'Picklist', Answer_Picklist__c = 'A,B,C,D', Expected_Answer__c ='A');
+        insert assessmentQuestion;
+        Test_Master__c testMaster = new Test_Master__c (CE_Module__c = CEModule.Id, Assessment_Question_Master__c = assessmentQuestionMaster.Id, Test_Type__c = 'module');
+        insert testMaster;
+        system.debug('CEModule.Id::::::'+CEModule.Id);
+        //brandingList = [select id,Name,Brand_Description__c,Brand_Image__c from Top_Branding__c];
+        Top_Branding__c topBranding = new Top_Branding__c(Name = 'Test Branding', Brand_Description__c = 'Test Branding Description', Brand_Image__c ='testingBrandImageUrl');
+        insert topBranding;
+        // Student_Feedback__c studentFeedback =  new Student_Feedback__c(Course_Master__c = courseMaster.Id, );
+        return courseMaster.Id;
+    }  
+    
+    
+    static Id getIdOfContact() {
+        // Create test record
+        Contact mentor = new Contact(FirstName = 'Aakash', LastName = 'Jain', Email= 'aakash.jain@utilitarianlab.com', RecordTypeId = mentorRecordTypeOnContact);
+        insert mentor;
+        Course_Category__c courseCategory = new Course_Category__c(Name='Testing Course Category');
+        insert courseCategory;
+        Course_Master__c courseMaster = new Course_Master__c(Name = 'testing Course', Active__c = true,Course_Category__c = courseCategory.Id);
+        insert courseMaster;
+        Course_Offering__c courseModule = new Course_Offering__c(Name = 'Testing Module', Active__c = true,Module_Agenda__c = 'testing Module Agenda',Description__c = 'testing Module description',Course_Master__c = courseMaster.id );
+        insert courseModule;
+        Course_Schedule__c courseSession = new Course_Schedule__c(Course_Offering__c = courseModule.id, Session_Agenda__c = 'testing session Agenda');
+        insert courseSession;
+        Course_Master__c courseMaster1 = new Course_Master__c(Name = 'testing Course 1', Active__c = true,Course_Category__c = courseCategory.Id);
+        insert courseMaster1;
+        Course_Offering__c courseModule1 = new Course_Offering__c(Name = 'Testing Module 1', Active__c = true,Module_Agenda__c = 'testing Module Agenda 1',Description__c = 'testing Module description 1',Course_Master__c = courseMaster1.id );
+        insert courseModule1;
+        Course_Schedule__c courseSession1 = new Course_Schedule__c(Course_Offering__c = courseModule1.id, Session_Agenda__c = 'testing session Agenda 1');
+        insert courseSession1;
+        
+        Course_Enrollment__c mentorsCourseEnrollment = new Course_Enrollment__c(Course_Master__c = courseMaster.Id, Contact__c = mentor.Id, Schedule_End_Date__c = Date.newInstance(2021, 10, 25), RecordTypeId  = mentorRecordTypeOnCourseEnrollment);
+        insert mentorsCourseEnrollment;
+        system.debug('mentorsCourseEnrollment::'+mentorsCourseEnrollment);
+        CE_Modules__c CEModule = [Select Id from CE_Modules__c where Course_Enrollment__c =: mentorsCourseEnrollment.id];
+        system.debug('CEModule:'+CEModule);
+        Ass_Ques_Master__c assessmentQuestionMaster = new Ass_Ques_Master__c(Name = 'Testing Assesment Question Master');
+        insert assessmentQuestionMaster;
+        Assessment_Question__c assessmentQuestion = new Assessment_Question__c(Question__c = 'Testing Question', Assessment_Question_Master__c =assessmentQuestionMaster.Id,Answer_Type__c = 'Picklist', Answer_Picklist__c = 'A,B,C,D', Expected_Answer__c ='A');
+        insert assessmentQuestion;
+        Test_Master__c testMaster = new Test_Master__c (CE_Module__c = CEModule.Id, Assessment_Question_Master__c = assessmentQuestionMaster.Id, Test_Type__c = 'module');
+        insert testMaster;
+        system.debug('CEModule.Id::::::'+CEModule.Id);
+        //brandingList = [select id,Name,Brand_Description__c,Brand_Image__c from Top_Branding__c];
+        Top_Branding__c topBranding = new Top_Branding__c(Name = 'Test Branding', Brand_Description__c = 'Test Branding Description', Brand_Image__c ='testingBrandImageUrl');
+        insert topBranding;
+        return mentor.Id;
+    }  
+    static Id getIdOfCEModule() {
+        // Create test record
+        Contact mentor = new Contact(FirstName = 'Aakash', LastName = 'Jain', Email= 'aakash.jain@utilitarianlab.com', RecordTypeId = mentorRecordTypeOnContact);
+        insert mentor;
+        Course_Master__c courseMaster = new Course_Master__c(Name = 'testing Course', Active__c = true);
+        insert courseMaster;
+        Course_Offering__c courseModule = new Course_Offering__c(Name = 'Testing Module', Active__c = true,Module_Agenda__c = 'testing Module Agenda',Description__c = 'testing Module description',Course_Master__c = courseMaster.id );
+        insert courseModule;
+        Course_Schedule__c courseSession = new Course_Schedule__c(Course_Offering__c = courseModule.id, Session_Agenda__c = 'testing session Agenda');
+        insert courseSession;
+        Course_Enrollment__c mentorsCourseEnrollment = new Course_Enrollment__c(Course_Master__c = courseMaster.Id, Contact__c = mentor.Id, Schedule_End_Date__c = Date.newInstance(2021, 10, 25), RecordTypeId  = mentorRecordTypeOnCourseEnrollment);
+        insert mentorsCourseEnrollment;
+        system.debug('mentorsCourseEnrollment::'+mentorsCourseEnrollment);
+        CE_Modules__c CEModule = [Select Id from CE_Modules__c where Course_Enrollment__c =: mentorsCourseEnrollment.id];
+        system.debug('CEModule:'+CEModule);
+        Ass_Ques_Master__c assessmentQuestionMaster = new Ass_Ques_Master__c(Name = 'Testing Assesment Question Master');
+        insert assessmentQuestionMaster;
+        Assessment_Question__c assessmentQuestion = new Assessment_Question__c(Question__c = 'Testing Question', Assessment_Question_Master__c =assessmentQuestionMaster.Id,Answer_Type__c = 'Picklist', Answer_Picklist__c = 'A,B,C,D', Expected_Answer__c ='A');
+        insert assessmentQuestion;
+        Test_Master__c testMaster = new Test_Master__c (CE_Module__c = CEModule.Id, Assessment_Question_Master__c = assessmentQuestionMaster.Id, Test_Type__c = 'module');
+        insert testMaster;
+        system.debug('CEModule.Id::::::'+CEModule.Id);
+        return CEModule.Id;
+    }    
+    
+    static Id getIdOfResultCategory() {
+        // Create test record
+        Contact student = new Contact(FirstName = 'Aakash', LastName = 'Jain', Email= 'aakash.jain@utilitarianlab.com');
+        insert student;
+        Student_Test_Association__c sta = new Student_Test_Association__c(Contact__c = student.Id, Status__c = 'Pending');
+        insert sta;
+        Result_Category__c resultCategory = new Result_Category__c(Name = 'Testing Result Category', Right_Answered_Ques__c = 4, Total_Questions__c = 5,Student_Test_Association__c= sta.id);
+        insert resultCategory;
+        return resultCategory.Id;
+    }          
+}
