@@ -1,0 +1,104 @@
+@isTest
+public class CourseEnrollmentTriggerHelper_Test {
+    @testSetup public static void creatingData() {
+        Course_Master__c courseMaster						= new Course_Master__c();
+        Course_Offering__c courseModule 					= new Course_Offering__c();
+        Course_Schedule__c courseSession 					= new Course_Schedule__c();
+        Contact mentor 										= new Contact();
+        Contact student										= new Contact();
+        Course_Enrollment__c mentorsCourseEnrollment  		= new Course_Enrollment__c();
+        Course_Enrollment__c studentsCourseEnrollment  		= new Course_Enrollment__c();
+        string mentorRecordTypeOnContact					= Schema.SobjectType.Contact.getRecordTypeInfosByName().get('Mentor').getRecordTypeId();
+        string studentRecordTypeOnContact					= Schema.SobjectType.Contact.getRecordTypeInfosByName().get('Student').getRecordTypeId();
+        string mentorRecordTypeOnCourseEnrollment			= Schema.SobjectType.Course_Enrollment__c.getRecordTypeInfosByName().get('Mentor').getRecordTypeId();
+        string studentRecordTypeOnCourseEnrollment			= Schema.SobjectType.Course_Enrollment__c.getRecordTypeInfosByName().get('Student').getRecordTypeId();
+        
+        test.startTest();
+        mentor.FirstName 									= 'Ajeet';
+        mentor.LastName 									= 'Kumar';
+        mentor.Email 										= 'aakash2510jain@gmail.com';
+        mentor.RecordTypeId									= mentorRecordTypeOnContact;
+        insert mentor;
+
+        student.FirstName 									= 'Aakash';
+        student.LastName 									= 'Jain';
+        student.Email 										= 'aakash.jain@utilitarianlab.com';
+        student.RecordTypeId								= studentRecordTypeOnContact;
+        insert student;
+       
+        courseMaster.Name 									= 'Testing Course Master';
+        courseMaster.Active__c 								= true;
+        insert courseMaster;
+        
+        courseModule.Name 									= 'First MOdule Under Testing Course Master';
+        courseModule.Course_Master__c 						= courseMaster.Id;
+        insert courseModule;
+        
+        courseSession.Course_Offering__c 					= courseModule.id;
+        courseSession.Start_Time__c 						= Time.newInstance(10, 00, 0, 0);
+        courseSession.End_Time__c 							= Time.newInstance(11, 00, 0, 0);
+        insert courseSession; 
+      
+        mentorsCourseEnrollment.Course_Master__c			= courseMaster.Id;
+        mentorsCourseEnrollment.RecordTypeId				= mentorRecordTypeOnCourseEnrollment;
+        mentorsCourseEnrollment.Contact__c					= mentor.Id;
+        mentorsCourseEnrollment.Students_to_Be_Alloted__c	= 5;
+        mentorsCourseEnrollment.Mentoring_Fee__c			= 1999;
+        mentorsCourseEnrollment.Schedule_End_Date__c		= Date.newInstance(2021, 12, 01);
+        mentorsCourseEnrollment.Status__c					= 'Requested by Mentor';
+        insert mentorsCourseEnrollment;
+       
+        studentsCourseEnrollment.Course_Master__c			= courseMaster.Id;
+        studentsCourseEnrollment.RecordTypeId				= studentRecordTypeOnCourseEnrollment;
+        studentsCourseEnrollment.Contact__c					= student.Id;
+        studentsCourseEnrollment.Status__c					= 'Requested by Student';
+        insert studentsCourseEnrollment;
+        test.stopTest();
+    }
+    @isTest public static void updatingSessionsCompleted(){
+        test.startTest();
+        Course_Enrollment__c mentorsCourseEnrollment = [Select Id From Course_Enrollment__c Where Applied_by__c = 'Mentor'];
+        CE_Modules__c CEModule = [Select Id,Total_Session__c,Total_Sessions_Completed__c From CE_Modules__c Where Course_Enrollment__c =:  mentorsCourseEnrollment.Id Limit 1]; 
+        CE_Session__c CESession = [Select Id, Status__c From CE_Session__c Where CE_Module__c =: CEModule.Id];
+        CESession.Status__c = 'Completed';
+        update CESession; 
+        test.stopTest();
+        
+    }
+    @isTest public static void allocatingMentorMentee(){
+        List<Course_Enrollment__c> enrollmentListToBeUpdated = new List<Course_Enrollment__c>();
+        Course_Enrollment__c mentorsCourseEnrollment = [Select Id,Contact__c From Course_Enrollment__c Where Applied_by__c = 'Mentor'];
+        Course_Enrollment__c studentsCourseEnrollment = [Select Id From Course_Enrollment__c Where Applied_by__c = 'Student'];
+        
+        mentorsCourseEnrollment.Status__c = 'Student Allocated';
+        
+        studentsCourseEnrollment.Status__c = 'Allocated for Mentoring';
+        studentsCourseEnrollment.Mentor_Course_Enrollment__c = mentorsCourseEnrollment.Id;
+        studentsCourseEnrollment.Mentor__c = mentorsCourseEnrollment.Contact__c;
+        
+        enrollmentListToBeUpdated.add(studentsCourseEnrollment);
+        enrollmentListToBeUpdated.add(mentorsCourseEnrollment);
+        update enrollmentListToBeUpdated;
+        
+        //CourseEnrollmentTriggerHelper.getFireBaseIdOfAllocatedCandidates(enrollmentListToBeUpdated);
+    }
+    @isTest public static void CESEssionTriggerHelper(){
+        test.startTest();
+        Course_Enrollment__c mentorsCourseEnrollment = [Select Id From Course_Enrollment__c Where Applied_by__c = 'Mentor'];
+        CE_Modules__c CEModule = [Select Id,Total_Session__c,Total_Sessions_Completed__c From CE_Modules__c Where Course_Enrollment__c =:  mentorsCourseEnrollment.Id Limit 1]; 
+        CE_Session__c CESession = [Select Id, Status__c From CE_Session__c Where CE_Module__c =: CEModule.Id];
+        CESession.Status__c = 'CANCELLED';
+        update CESession; 
+        
+        CE_Session__c newSession = new CE_Session__c();
+        newSession.CE_Module__c = CEModule.Id;
+        newSession.Start_DateTime__c = DateTime.newInstance(2021, 10, 25, 10, 00, 00);
+		newSession.End_DateTime__c = DateTime.newInstance(2021, 10, 25, 11, 00, 00);
+        newSession.Session_Title__c = 'Testing Purpose';
+        insert newSession;
+        
+        CE_Session__c sessionToBeDeleted  = [Select Id From CE_Session__c where Session_Title__c = 'Testing Purpose' ];
+        database.delete(sessionToBeDeleted.Id);
+        test.stopTest();
+    }
+}
